@@ -1,0 +1,317 @@
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.net.UnknownServiceException;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLProtocolException;
+
+import org.jsoup.HttpStatusException;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+
+
+
+
+public class TestQuery {
+	public String searchKeyword;
+	public String url;
+	public String content;
+	WebPage rootPage ;
+	WebTree tree ;
+	private ArrayList<Keyword> lst ;
+	KeywordList list = new KeywordList();
+	
+	public TestQuery(String searchKeyword) {
+		this.searchKeyword = searchKeyword;
+		this.url = "http://www.google.com/search?q="+searchKeyword+"&oe=utf8&num=10";
+	}
+
+	public void query() throws IOException {
+		
+		
+		Document doc =Jsoup.connect(this.url).timeout(15000).ignoreContentType(true).get();
+		
+		Elements div_rcs = doc.select("div.rc");
+		
+		for (Element div_rc : div_rcs) {
+			
+			try{
+			Element h3 =div_rc.select("h3.r").get(0);
+			String title= h3.text();
+			
+			Element span =div_rc.select("span.st").get(0);
+			String content= span.text();
+			
+			Element cite = div_rc.select("a").first( );
+			String absHref = cite.attr("abs:href"); 
+			String citeUrl = absHref;
+			
+			if (!citeUrl.contains("http")) {
+			    citeUrl = "http://" + citeUrl;
+			}else {
+				if(citeUrl.contains("wiki")||citeUrl.contains("news")||citeUrl.contains(".org")||citeUrl.contains("blog")||citeUrl.contains("dictionary") ||citeUrl.contains("definition")||title.contains("definition")) {
+					String[] tmp = citeUrl.split(" ");
+					String trueUrl = tmp[0];
+					rootPage =  new WebPage(trueUrl,title,content);
+					 tree = new WebTree(rootPage);
+				}else {
+					String[] tmp = citeUrl.split(" ");
+					String trueUrl = tmp[0];
+					//System.out.println("Parent:"+title+","+trueUrl);
+					 rootPage =  new WebPage(trueUrl,title,content);
+					 tree = new WebTree(rootPage);
+					
+					 weight();
+					query1(trueUrl);
+					
+					
+					
+				}
+					
+				}
+				
+				
+			}catch (SSLHandshakeException ssl){
+				System.out.println("SSLHandshakeException");
+			}catch( HttpStatusException httpS) {
+				System.out.println(" HttpStatusException");
+			}catch(SSLProtocolException ptc) {
+				System.setProperty ("jsse.enableSNIExtension", "false");
+			}catch (ConnectException cC) {
+				System.out.println("ConnectException ");
+			}catch(SocketTimeoutException time) {
+				System.setProperty("http.proxyHost", "127.0.0.1");
+				System.setProperty("http.proxyPort", "8182");
+			}catch(UnknownHostException a) {
+				System.out.println("UnknownHostException");
+			}catch(UnknownServiceException unknown) {
+				System.out.println("UnknownServiceException");
+			}catch(MalformedURLException url)
+			{
+				System.out.println("MalformedURLException");
+			}
+			catch (FileNotFoundException file){
+				System.out.println("FileNotFoundException");
+			}catch(IOException io) { 
+				 System.out.println("IOException");}
+			catch(NullPointerException nulls){
+				System.out.println("null");
+			}
+		
+			list.add(new Keyword(tree.getStartNodeName(),tree.getStartNodeScore(),tree.getStartNodeURL(),tree.getStratNodeContent()));
+			//tree.eularPrintTree();
+			
+		}
+	
+		list.sort();
+		list.output();
+		
+		  
+}
+	
+	public void query1(String url) throws IOException{
+		Document doc1 =Jsoup.connect(url).timeout(15000).ignoreContentType(true).get();
+		Elements links = doc1.select("a[href]");
+		for(Element link:links) {
+			try {
+			String trueUrl1 = link.attr("abs:href");
+			String title = link.text();
+			 
+
+			//System.out.println("Child:"+title + " : " + trueUrl1);
+			createTree(trueUrl1,title);
+			if(trueUrl1.contains("wiki")||trueUrl1.contains("news")||trueUrl1.contains(".org")) {
+				
+			}else {
+				weight();	
+			}
+			
+	
+			
+			}	catch (SSLHandshakeException ssl){
+				System.out.println("SSLHandshakeException");
+			}catch( HttpStatusException httpS) {
+				System.out.println(" HttpStatusException");
+			}catch(SSLProtocolException ptc) {
+				System.setProperty ("jsse.enableSNIExtension", "false");
+			}catch (ConnectException cC) {
+				System.out.println("ConnectException ");
+			}catch(SocketTimeoutException time) {
+				System.setProperty("http.proxyHost", "127.0.0.1");
+				System.setProperty("http.proxyPort", "8182");
+			}catch(UnknownHostException a) {
+				System.out.println("UnknownHostException");
+			}catch(UnknownServiceException unknown) {
+				System.out.println("UnknownServiceException");
+			}catch(MalformedURLException url1)
+			{
+				System.out.println("MalformedURLException");
+			}
+			catch (FileNotFoundException file){
+				System.out.println("FileNotFoundException");
+			}catch(IOException io) { 
+               System.out.println("IOException");
+		}catch(NullPointerException nulls){
+			System.out.println("null");
+		}
+		}
+		
+
+       }
+	public void weight() throws IOException {
+	 	ArrayList<Keyword> keywords = new ArrayList<Keyword>();
+		 if(this.searchKeyword.contains("ram")||this.searchKeyword.contains("記憶體")||this.searchKeyword.contains("memory")) {
+			 
+			
+				HashMap<Double,String> keywords1 = new HashMap<Double,String>();
+				keywords1.put(2.0, "ram");
+				keywords1.put(5.0, "記憶體");
+				keywords1.put(5.5, "DDR");
+				keywords1.put(10.0, "$");
+				keywords1.put(3.5, "價格");
+				keywords1.put(3.0, "Hyper");
+				keywords1.put(2.0, "G");
+				
+			
+				for (Double key : keywords1.keySet()) {
+				String name = keywords1.get(key);
+				double weight = key; 
+				Keyword k = new Keyword(name,weight);
+				keywords.add(k);
+	           
+	        }
+				
+				 tree.setPostOrderScore(keywords);
+			 
+		 }else if(this.searchKeyword.contains("cpu")||this.searchKeyword.contains("intel5")||this.searchKeyword.contains("intel7")||this.searchKeyword.contains("中央處理器")) {
+			 
+			
+				HashMap<Double,String> keywords1 = new HashMap<Double,String>();
+				keywords1.put(10.5, "CPU");
+				keywords1.put(11.0, "GHz");
+				keywords1.put(9.0, "中央處理器");
+				keywords1.put(20.0, "intel");
+				keywords1.put(21.5, "AMD");
+				keywords1.put(7.0, "i5");
+				keywords1.put(6.0, "i7");
+				keywords1.put(13.0, "Core");
+				keywords1.put(3.0, "$");
+				keywords1.put(3.5, "價格");
+				
+					
+				for (Double key : keywords1.keySet()) {
+				String name = keywords1.get(key);
+				double weight = key; 
+				Keyword k = new Keyword(name,weight);
+				keywords.add(k);
+	           
+	        }
+				
+				 tree.setPostOrderScore(keywords);
+			 
+		 }else if(this.searchKeyword.contains("graphic card")||this.searchKeyword.contains("顯示卡")||this.searchKeyword.contains("gpu")||this.searchKeyword.contains("gtx") ||this.searchKeyword.contains("AMD")||this.searchKeyword.contains("Nvidia")) {
+			 
+			
+				HashMap<Double,String> keywords1 = new HashMap<Double,String>();
+				keywords1.put(10.5, "Graphic Card");
+				keywords1.put(10.0, "顯示卡");
+				keywords1.put(8.0, "Nvidia");
+				keywords1.put(8.5, "geforce");
+				keywords1.put(7.0, "AMD");
+				keywords1.put(7.5, "Radeon");
+				keywords1.put(6.5, "gigabyte");
+				keywords1.put(6.0, "msi");
+				keywords1.put(5.5, "asus");
+				keywords1.put(4.5, "gpu memory");
+				keywords1.put(4.0, "GB");
+				keywords1.put(3.0, "$");
+				keywords1.put(3.5, "價格");
+				
+					
+				for (Double key : keywords1.keySet()) {
+				String name = keywords1.get(key);
+				double weight = key; 
+				Keyword k = new Keyword(name,weight);
+				keywords.add(k);
+	           
+	        }
+				
+				 tree.setPostOrderScore(keywords);
+			 
+		 }else if(this.searchKeyword.contains("harddisk")||this.searchKeyword.contains("HDD")||this.searchKeyword.contains("hdd")||this.searchKeyword.contains("ssd")||this.searchKeyword.contains("SSD")||this.searchKeyword.contains("硬碟") ) {
+			 
+			
+				HashMap<Double,String> keywords1 = new HashMap<Double,String>();
+				keywords1.put(10.5, "Hard Disk");
+				keywords1.put(10.0, "硬碟");
+				keywords1.put(8.0, "HDD磁碟硬碟");
+				keywords1.put(8.5, "SSD固態硬碟");
+				keywords1.put(7.0, "HDD");
+				keywords1.put(7.5, "SSD");
+				keywords1.put(4.0, "GB");
+				keywords1.put(3.0, "$");
+				keywords1.put(3.5, "價格");
+				
+					
+				for (Double key : keywords1.keySet()) {
+				String name = keywords1.get(key);
+				double weight = key; 
+				Keyword k = new Keyword(name,weight);
+				keywords.add(k);
+	           
+	        }
+				
+				 tree.setPostOrderScore(keywords);
+			 
+		 }else if(this.searchKeyword.contains("hard disk")||this.searchKeyword.contains("hdd")||this.searchKeyword.contains("ssd")||this.searchKeyword.contains("硬碟") ) {
+			 
+			
+				HashMap<Double,String> keywords1 = new HashMap<Double,String>();
+				keywords1.put(10.5, "Hard Disk");
+				keywords1.put(10.0, "硬碟");
+				keywords1.put(8.0, "HDD磁碟硬碟");
+				keywords1.put(8.5, "SSD固態硬碟");
+				keywords1.put(7.0, "HDD");
+				keywords1.put(7.5, "SSD");
+				keywords1.put(4.0, "GB");
+				keywords1.put(3.0, "$");
+				keywords1.put(3.5, "價格");
+				
+					
+				for (Double key : keywords1.keySet()) {
+				String name = keywords1.get(key);
+				double weight = key; 
+				Keyword k = new Keyword(name,weight);
+				keywords.add(k);
+	           
+	        }
+				
+				 tree.setPostOrderScore(keywords);
+			 
+		 }
+		
+		
+		
+			
+		
+	}
+		
+	
+
+	
+	public void createTree(String URL,String name) {
+			tree.root.addChild(new WebNode(new WebPage(URL,name)));
+	}
+	
+	
+}

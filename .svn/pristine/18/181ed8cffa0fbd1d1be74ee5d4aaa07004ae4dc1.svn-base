@@ -1,0 +1,36 @@
+
+
+public class Keyword {
+ 
+	public String name;
+	public double weight;
+	public String URL;
+	
+	
+	public Keyword(String name,double weight){
+		this.name = name;
+		this.weight= weight;
+	
+	}
+	public Keyword(String name,double weight,String url){
+		this.name = name;
+		this.weight= weight;
+		this.URL=url;
+	
+	}
+	
+	@Override
+	public String toString(){
+   String a =" <section class=\"col-xs-12 col-sm-6 col-md-12\">\r\n" + 
+   		"		<article class=\"search-result row\">\r\n" + 
+   		"			<div class=\"col-xs-12 col-sm-12 col-md-7 excerpet\">\r\n" + 
+   		"				<h3><a href=\""+URL +"\" title=\""+name +"\">"+name +"</a></h3>\r\n" + 
+   		"				<p>"+URL +"</p>						\r\n" + 
+   		"			</div>\r\n" + 
+   		"			<br>\r\n" + 
+   		"			<br>\r\n" + 
+   		"		</article>\r\n" + 
+   		"	</section>";
+      return a ;		
+	}
+}
